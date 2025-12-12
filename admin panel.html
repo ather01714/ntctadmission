@@ -1,0 +1,149 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Norshunda</title>
+    <style>
+        body { font-family: sans-serif; background: #eef2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        
+        /* LOGIN FORM */
+        #login-screen { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #003366; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #002244; }
+
+        /* DASHBOARD */
+        #dashboard { display: none; width: 90%; max-width: 800px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .delete-btn { background: #ff4444; padding: 5px 10px; font-size: 0.8rem; }
+        
+        ul { list-style: none; padding: 0; }
+        li { background: #f9f9f9; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h2 style="color:#003366;">Admin Login</h2>
+        <input type="text" id="phone" placeholder="Phone Number">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p id="error" style="color:red; font-size: 0.9rem; display:none;">Invalid Credentials</p>
+    </div>
+
+    <div id="dashboard">
+        <div class="header">
+            <h2>Admin Control Panel</h2>
+            <button onclick="logout()" style="width: auto; background: #555;">Logout</button>
+        </div>
+
+        <div class="card">
+            <h3>Manage Notices</h3>
+            <input type="text" id="newNotice" placeholder="Write notice here (e.g., Office Exam on Friday)">
+            <button onclick="addNotice()">Add Notice</button>
+            <br><br>
+            <h4>Current Notices:</h4>
+            <ul id="adminNoticeList"></ul>
+        </div>
+
+        <div class="card">
+            <h3>Manage Images/PDF Links</h3>
+            <p style="font-size:0.8rem; color:grey;">Note: Since this is a static site, enter the URL of the image/pdf.</p>
+            <input type="text" id="mediaTitle" placeholder="Title (e.g. Class Routine PDF)">
+            <input type="text" id="mediaLink" placeholder="Link (e.g. drive.google.com/...)">
+            <button onclick="addMedia()">Add Link</button>
+            <ul id="mediaList"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 1. LOGIN LOGIC
+        function login() {
+            const p = document.getElementById('phone').value;
+            const pass = document.getElementById('password').value;
+            
+            // DEMO CREDENTIALS: Phone = 01700, Pass = 1234
+            if(p === "01700" && pass === "1234") {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadAdminData();
+            } else {
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+
+        function logout() { location.reload(); }
+
+        // 2. NOTICE LOGIC (LocalStorage)
+        function addNotice() {
+            const text = document.getElementById('newNotice').value;
+            if(!text) return;
+
+            const notices = JSON.parse(localStorage.getItem('norshunda_notices')) || [];
+            const newEntry = {
+                id: Date.now(),
+                text: text,
+                date: new Date().toLocaleDateString()
+            };
+            
+            notices.push(newEntry);
+            localStorage.setItem('norshunda_notices', JSON.stringify(notices));
+            document.getElementById('newNotice').value = "";
+            loadAdminData();
+            alert("Notice Added! Check Home Page.");
+        }
+
+        function deleteNotice(id) {
+            let notices = JSON.parse(localStorage.getItem('norshunda_notices')) || [];
+            notices = notices.filter(n => n.id !== id);
+            localStorage.setItem('norshunda_notices', JSON.stringify(notices));
+            loadAdminData();
+        }
+
+        // 3. MEDIA LOGIC
+        function addMedia() {
+            const title = document.getElementById('mediaTitle').value;
+            const link = document.getElementById('mediaLink').value;
+            if(!title || !link) return;
+
+            const media = JSON.parse(localStorage.getItem('norshunda_media')) || [];
+            media.push({ id: Date.now(), title, link });
+            localStorage.setItem('norshunda_media', JSON.stringify(media));
+            loadAdminData();
+        }
+
+        function deleteMedia(id) {
+            let media = JSON.parse(localStorage.getItem('norshunda_media')) || [];
+            media = media.filter(m => m.id !== id);
+            localStorage.setItem('norshunda_media', JSON.stringify(media));
+            loadAdminData();
+        }
+
+        // 4. LOAD DATA TO LISTS
+        function loadAdminData() {
+            // Load Notices
+            const notices = JSON.parse(localStorage.getItem('norshunda_notices')) || [];
+            const nList = document.getElementById('adminNoticeList');
+            nList.innerHTML = "";
+            notices.slice().reverse().forEach(n => {
+                nList.innerHTML += `<li>
+                    ${n.text} <button class="delete-btn" onclick="deleteNotice(${n.id})">Delete</button>
+                </li>`;
+            });
+
+            // Load Media
+            const media = JSON.parse(localStorage.getItem('norshunda_media')) || [];
+            const mList = document.getElementById('mediaList');
+            mList.innerHTML = "";
+            media.forEach(m => {
+                mList.innerHTML += `<li>
+                    <a href="${m.link}" target="_blank">${m.title}</a> 
+                    <button class="delete-btn" onclick="deleteMedia(${m.id})">Delete</button>
+                </li>`;
+            });
+        }
+    </script>
+</body>
+</html>
